@@ -1,21 +1,20 @@
 package com.zn.aicodemother.controller;
 
 import com.mybatisflex.core.paginate.Page;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.zn.aicodemother.common.BaseResponse;
+import com.zn.aicodemother.common.ResultUtils;
+import com.zn.aicodemother.exception.ErrorCode;
+import com.zn.aicodemother.exception.ThrowUtils;
+import com.zn.aicodemother.model.dto.user.UserRegisterRequest;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.service.UserService;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.annotation.Resource;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 /**
- *  控制层。
+ * 控制层。
  *
  * @author Zn
  * @since 2026-01-17
@@ -24,18 +23,24 @@ import java.util.List;
 @RequestMapping("/user")
 public class UserController {
 
-    @Autowired
+    @Resource
     private UserService userService;
 
+
     /**
-     * 保存。
+     * 用户注册
      *
-     * @param user 
-     * @return {@code true} 保存成功，{@code false} 保存失败
+     * @param userRegisterRequest 用户注册请求
+     * @return 返回用户ID
      */
-    @PostMapping("save")
-    public boolean save(@RequestBody User user) {
-        return userService.save(user);
+    @PostMapping("/register")
+    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
+        ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
+        String userAccount = userRegisterRequest.getUserAccount();
+        String userPassword = userRegisterRequest.getUserPassword();
+        String checkPassword = userRegisterRequest.getCheckPassword();
+        long result = userService.userRegister(userAccount, userPassword, checkPassword);
+        return ResultUtils.success(result);
     }
 
     /**
@@ -52,7 +57,7 @@ public class UserController {
     /**
      * 根据主键更新。
      *
-     * @param user 
+     * @param user
      * @return {@code true} 更新成功，{@code false} 更新失败
      */
     @PutMapping("update")
