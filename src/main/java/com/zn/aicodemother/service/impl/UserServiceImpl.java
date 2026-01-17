@@ -121,4 +121,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         BeanUtils.copyProperties(user, loginUserVO);
         return loginUserVO;
     }
+
+    /**
+     * 获取当前登录用户
+     *
+     * @param request 请求
+     * @return 脱敏后的用户信息
+     */
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
+        ThrowUtils.throwIf(user == null || user.getId()==null, ErrorCode.NOT_LOGIN_ERROR);
+        return user;
+    }
 }
