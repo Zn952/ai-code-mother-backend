@@ -76,7 +76,7 @@
 <!--      https://mybatis-flex.com/zh/intro/getting-started.html  -->
         <dependency>
             <groupId>com.mybatis-flex</groupId>
-            <artifactId>mybatis-flex-codegen</artifactId>
+            <artifactId>mybatis-flex-spring-boot3-starter</artifactId>
             <version>1.11.5</version>
         </dependency>
         <!-- 代码生成模块 -->
