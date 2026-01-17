@@ -5,10 +5,14 @@ import com.zn.aicodemother.common.BaseResponse;
 import com.zn.aicodemother.common.ResultUtils;
 import com.zn.aicodemother.exception.ErrorCode;
 import com.zn.aicodemother.exception.ThrowUtils;
+import com.zn.aicodemother.model.dto.user.UserLoginRequest;
 import com.zn.aicodemother.model.dto.user.UserRegisterRequest;
 import com.zn.aicodemother.model.entity.User;
+import com.zn.aicodemother.model.vo.LoginUserVO;
 import com.zn.aicodemother.service.UserService;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -42,6 +46,16 @@ public class UserController {
         long result = userService.userRegister(userAccount, userPassword, checkPassword);
         return ResultUtils.success(result);
     }
+
+    @PostMapping("/login")
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR);
+        String userAccount = userLoginRequest.getUserAccount();
+        String userPassword = userLoginRequest.getUserPassword();
+        LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
+        return ResultUtils.success(loginUserVO);
+    }
+
 
     /**
      * 根据主键删除。
