@@ -50,7 +50,7 @@ public class UserController {
      * 用户登录
      *
      * @param userLoginRequest 用户登录请求体
-     * @param request          请求
+     * @param request          请求对象
      * @return 脱敏后的用户信息
      */
     @PostMapping("/login")
@@ -65,13 +65,24 @@ public class UserController {
     /**
      * 获取当前登录用户的信息
      *
-     * @param request 请求
+     * @param request 请求对象
      * @return 脱敏后的用户信息
      */
     @GetMapping("/get/login")
     public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
         return ResultUtils.success(userService.getLoginUserVO(loginUser));
+    }
+
+    /**
+     * 退出登录
+     * @param request 请求对象
+     * @return 退出登录结果
+     */
+    @PostMapping("/logout")
+    public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR,"无法获取请求信息");
+        return ResultUtils.success(userService.userLogout(request));
     }
 
     /**

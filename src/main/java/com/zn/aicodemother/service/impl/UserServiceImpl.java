@@ -1,5 +1,6 @@
 package com.zn.aicodemother.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -133,5 +134,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
         ThrowUtils.throwIf(user == null || user.getId()==null, ErrorCode.NOT_LOGIN_ERROR);
         return user;
+    }
+
+    /**
+     * 退出登录
+     *
+     * @param request 请求对象
+     *
+     * @return 退出登录结果
+     */
+    @Override
+    public Boolean userLogout(HttpServletRequest request) {
+        // 先判断用户是否登录
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        ThrowUtils.throwIf(userObj == null, ErrorCode.OPERATION_ERROR,"用户未登录");
+        // 移除登录态
+        request.getSession().removeAttribute(USER_LOGIN_STATE);
+        return true;
     }
 }
