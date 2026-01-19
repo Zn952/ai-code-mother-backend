@@ -1,11 +1,11 @@
 package com.zn.aicodemother.mapper;
 
-import org.apache.ibatis.annotations.Mapper;
 import com.mybatisflex.core.BaseMapper;
 import com.zn.aicodemother.model.entity.User;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
- *  映射层。
+ * 映射层。
  *
  * @author Zn
  * @since 2026-01-17

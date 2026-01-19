@@ -1,6 +1,5 @@
 package com.zn.aicodemother.service.impl;
 
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -10,6 +9,7 @@ import com.zn.aicodemother.mapper.UserMapper;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.enums.UserRoleEnum;
 import com.zn.aicodemother.model.vo.LoginUserVO;
+import com.zn.aicodemother.model.vo.UserVO;
 import com.zn.aicodemother.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.BeanUtils;
@@ -167,5 +167,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         boolean saved = this.save(user);
         ThrowUtils.throwIf(!saved, ErrorCode.OPERATION_ERROR);
         return user.getId();
+    }
+
+    /**
+     * 根据User实体对象获取对应的UserVO对象
+     *
+     * @param user 用户实体对象，包含完整的用户信息
+     * @return UserVO对象，包含脱敏后的用户信息
+     */
+    @Override
+    public UserVO getUserVO(User user) {
+        ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR);
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+        return userVO;
     }
 }

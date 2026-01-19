@@ -3,6 +3,7 @@ package com.zn.aicodemother.service;
 import com.mybatisflex.core.service.IService;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.vo.LoginUserVO;
+import com.zn.aicodemother.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
@@ -72,7 +73,16 @@ public interface UserService extends IService<User> {
      * 添加用户的方法
      *
      * @param user 用户对象，包含要添加的用户信息
-     * @return  返回添加的用户ID
+     * @return 返回添加的用户ID
      */
     Long addUser(User user);
+
+    /**
+     * 根据User实体对象获取对应的UserVO对象
+     * UserVO（View Object）通常用于前端展示，是对User实体的一种封装
+     *
+     * @param user 用户实体对象，包含完整的用户信息
+     * @return 返回对应的UserVO对象，可能包含部分或全部用户信息，用于前端展示
+     */
+    UserVO getUserVO(User user);
 }

@@ -12,6 +12,7 @@ import com.zn.aicodemother.model.dto.user.UserLoginRequest;
 import com.zn.aicodemother.model.dto.user.UserRegisterRequest;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.vo.LoginUserVO;
+import com.zn.aicodemother.model.vo.UserVO;
 import com.zn.aicodemother.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -80,17 +81,19 @@ public class UserController {
 
     /**
      * 退出登录
+     *
      * @param request 请求对象
      * @return 退出登录结果
      */
     @PostMapping("/logout")
     public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
-        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR,"无法获取请求信息");
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR, "无法获取请求信息");
         return ResultUtils.success(userService.userLogout(request));
     }
 
     /**
      * 管理员添加用户
+     *
      * @param userAddRequest 用户添加请求
      * @return 添加的用户ID
      */
@@ -102,4 +105,33 @@ public class UserController {
         BeanUtils.copyProperties(userAddRequest, user);
         return ResultUtils.success(userService.addUser(user));
     }
+
+    /**
+     * 管理员查看用户消息
+     *
+     * @param id 用户ID
+     * @return 用户信息
+     */
+    @GetMapping("/get")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<User> getUserById(long id) {
+        ThrowUtils.throwIf((id < 0), ErrorCode.PARAMS_ERROR);
+        User user = userService.getById(id);
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
+        return ResultUtils.success(user);
+    }
+
+    /**
+     * 获取用户视图
+     *
+     * @param id 用户ID
+     * @return 用户视图
+     */
+    @GetMapping("/get/vo")
+    public BaseResponse<UserVO> getUserVOById(long id) {
+        BaseResponse<User> userResponse = getUserById(id);
+        User user = userResponse.getData();
+        return ResultUtils.success(userService.getUserVO(user));
+    }
+
 }
