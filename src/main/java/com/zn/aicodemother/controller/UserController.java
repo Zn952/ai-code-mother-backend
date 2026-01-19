@@ -3,13 +3,12 @@ package com.zn.aicodemother.controller;
 import com.mybatisflex.core.paginate.Page;
 import com.zn.aicodemother.annotation.AuthCheck;
 import com.zn.aicodemother.common.BaseResponse;
+import com.zn.aicodemother.common.DeleteRequest;
 import com.zn.aicodemother.common.ResultUtils;
 import com.zn.aicodemother.constant.UserConstant;
 import com.zn.aicodemother.exception.ErrorCode;
 import com.zn.aicodemother.exception.ThrowUtils;
-import com.zn.aicodemother.model.dto.user.UserAddRequest;
-import com.zn.aicodemother.model.dto.user.UserLoginRequest;
-import com.zn.aicodemother.model.dto.user.UserRegisterRequest;
+import com.zn.aicodemother.model.dto.user.*;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.vo.LoginUserVO;
 import com.zn.aicodemother.model.vo.UserVO;
@@ -115,7 +114,7 @@ public class UserController {
     @GetMapping("/get")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<User> getUserById(long id) {
-        ThrowUtils.throwIf((id < 0), ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf((id <= 0), ErrorCode.PARAMS_ERROR);
         User user = userService.getById(id);
         ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
         return ResultUtils.success(user);
@@ -132,6 +131,51 @@ public class UserController {
         BaseResponse<User> userResponse = getUserById(id);
         User user = userResponse.getData();
         return ResultUtils.success(userService.getUserVO(user));
+    }
+
+    /**
+     * 管理员删除用户
+     *
+     * @param deleteRequest 删除请求
+     * @return 删除结果
+     */
+    @PostMapping("/delete")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> deleteUserById(@RequestBody DeleteRequest deleteRequest) {
+        ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() <= 0, ErrorCode.PARAMS_ERROR);
+        boolean remove = userService.removeById(deleteRequest.getId());
+        return ResultUtils.success(remove);
+    }
+
+    /**
+     * 更新用户信息
+     *
+     * @param userUpdateRequest 用户更新请求
+     * @return 更新结果
+     */
+    @PostMapping("/update")
+    public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest) {
+        ThrowUtils.throwIf(userUpdateRequest == null, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf((userUpdateRequest.getId()!=null && userUpdateRequest.getId()<=0), ErrorCode.PARAMS_ERROR);
+        User user = new User();
+        BeanUtils.copyProperties(userUpdateRequest, user);
+        boolean update = userService.updateById(user);
+        return ResultUtils.success(update);
+    }
+
+    @PostMapping("list/page/vo")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Page<UserVO>> getUserVOList(@RequestBody UserQueryRequest userQueryRequest) {
+        ThrowUtils.throwIf(userQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        long pageNum = userQueryRequest.getPageNum();
+        long pageSize = userQueryRequest.getPageSize();
+        pageNum = Math.max(pageNum, 1);
+        pageSize = pageSize < 1 ? 10 : pageSize;
+        Page<User> userPage = userService.page(new Page<>(pageNum, pageSize), userService.getQueryWrapper(userQueryRequest));
+        Page<UserVO> userVOPage = new Page<>(pageNum, pageSize, userPage.getTotalRow());
+        List<UserVO> userVOList = userService.getUserVOList(userPage.getRecords());
+        userVOPage.setRecords(userVOList);
+        return ResultUtils.success(userVOPage);
     }
 
 }

@@ -1,11 +1,14 @@
 package com.zn.aicodemother.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.zn.aicodemother.exception.ErrorCode;
 import com.zn.aicodemother.exception.ThrowUtils;
 import com.zn.aicodemother.mapper.UserMapper;
+import com.zn.aicodemother.model.dto.user.UserQueryRequest;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.enums.UserRoleEnum;
 import com.zn.aicodemother.model.vo.LoginUserVO;
@@ -17,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.zn.aicodemother.constant.UserConstant.USER_LOGIN_STATE;
 
@@ -182,4 +187,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         BeanUtils.copyProperties(user, userVO);
         return userVO;
     }
+
+    /**
+     * 根据用户列表获取用户视图对象列表
+     *
+     * @param userList 用户实体列表，包含完整的用户信息
+     * @return UserVO视图对象列表，包含脱敏后的用户信息
+     */
+    @Override
+    public List<UserVO> getUserVOList(List<User> userList) {
+        ThrowUtils.throwIf(CollUtil.isEmpty(userList), ErrorCode.PARAMS_ERROR,"用户列表为空");
+        return userList.stream().map(this::getUserVO).collect(Collectors.toList());
+    }
+
+    /**
+     * 根据用户查询请求条件构建查询包装器
+     *
+     * @param userQueryRequest 用户查询请求对象，包含查询条件
+     * @return QueryWrapper 返回一个包含查询条件的MyBatis-Plus查询包装器，
+     */
+    @Override
+    public QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest) {
+        ThrowUtils.throwIf(userQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        Long id = userQueryRequest.getId();
+        String userAccount = userQueryRequest.getUserAccount();
+        String userName = userQueryRequest.getUserName();
+        String userProfile = userQueryRequest.getUserProfile();
+        String userRole = userQueryRequest.getUserRole();
+        String sortField = userQueryRequest.getSortField();
+        String sortOrder = userQueryRequest.getSortOrder();
+        return QueryWrapper.create()
+                .eq("id", id)
+                .eq("userRole", userRole)
+                .like("userAccount", userAccount)
+                .like("userName", userName)
+                .like("userProfile", userProfile)
+                .orderBy(sortField, "ascend".equals(sortOrder));
+
+    }
+
 }

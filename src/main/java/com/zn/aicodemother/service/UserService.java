@@ -1,10 +1,14 @@
 package com.zn.aicodemother.service;
 
+import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.zn.aicodemother.model.dto.user.UserQueryRequest;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.vo.LoginUserVO;
 import com.zn.aicodemother.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
 
 /**
  * 服务层。
@@ -79,10 +83,27 @@ public interface UserService extends IService<User> {
 
     /**
      * 根据User实体对象获取对应的UserVO对象
-     * UserVO（View Object）通常用于前端展示，是对User实体的一种封装
+     * UserVO用于前端展示，是对User实体的一种封装
      *
      * @param user 用户实体对象，包含完整的用户信息
-     * @return 返回对应的UserVO对象，可能包含部分或全部用户信息，用于前端展示
+     * @return 返回对应的UserVO对象
      */
     UserVO getUserVO(User user);
+
+    /**
+     * 根据用户列表获取用户视图对象列表
+     * 该方法用于将User实体列表转换为UserVO视图对象列表，用于展示层
+     *
+     * @param userList 用户实体列表，包含完整的用户信息
+     * @return UserVO视图对象列表
+     */
+    List<UserVO> getUserVOList(List<User> userList);
+
+    /**
+     * 根据用户查询请求条件构建查询包装器
+     *
+     * @param userQueryRequest 用户查询请求对象，包含查询条件
+     * @return QueryWrapper 返回一个包含查询条件的MyBatis-Plus查询包装器，
+     */
+    QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
 }
