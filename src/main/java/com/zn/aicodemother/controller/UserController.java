@@ -156,7 +156,7 @@ public class UserController {
     @PostMapping("/update")
     public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest) {
         ThrowUtils.throwIf(userUpdateRequest == null, ErrorCode.PARAMS_ERROR);
-        ThrowUtils.throwIf((userUpdateRequest.getId()!=null && userUpdateRequest.getId()<=0), ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf((userUpdateRequest.getId() != null && userUpdateRequest.getId() <= 0), ErrorCode.PARAMS_ERROR);
         User user = new User();
         BeanUtils.copyProperties(userUpdateRequest, user);
         boolean update = userService.updateById(user);

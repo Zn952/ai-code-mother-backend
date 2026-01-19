@@ -1,7 +1,6 @@
 package com.zn.aicodemother.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -196,7 +195,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     public List<UserVO> getUserVOList(List<User> userList) {
-        ThrowUtils.throwIf(CollUtil.isEmpty(userList), ErrorCode.PARAMS_ERROR,"用户列表为空");
+        ThrowUtils.throwIf(CollUtil.isEmpty(userList), ErrorCode.PARAMS_ERROR, "用户列表为空");
         return userList.stream().map(this::getUserVO).collect(Collectors.toList());
     }
 
