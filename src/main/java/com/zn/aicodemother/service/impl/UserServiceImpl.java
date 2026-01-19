@@ -161,7 +161,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public Long addUser(User user) {
         ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR);
-        String encryptedPassword = getEncryptedPassword(user.getUserPassword());
+        String userPassword = "123456";
+        String encryptedPassword = getEncryptedPassword(userPassword);
         user.setUserPassword(encryptedPassword);
         boolean saved = this.save(user);
         ThrowUtils.throwIf(!saved, ErrorCode.OPERATION_ERROR);
