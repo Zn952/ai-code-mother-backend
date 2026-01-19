@@ -1,10 +1,13 @@
 package com.zn.aicodemother.controller;
 
 import com.mybatisflex.core.paginate.Page;
+import com.zn.aicodemother.annotation.AuthCheck;
 import com.zn.aicodemother.common.BaseResponse;
 import com.zn.aicodemother.common.ResultUtils;
+import com.zn.aicodemother.constant.UserConstant;
 import com.zn.aicodemother.exception.ErrorCode;
 import com.zn.aicodemother.exception.ThrowUtils;
+import com.zn.aicodemother.model.dto.user.UserAddRequest;
 import com.zn.aicodemother.model.dto.user.UserLoginRequest;
 import com.zn.aicodemother.model.dto.user.UserRegisterRequest;
 import com.zn.aicodemother.model.entity.User;
@@ -12,6 +15,7 @@ import com.zn.aicodemother.model.vo.LoginUserVO;
 import com.zn.aicodemother.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -86,57 +90,16 @@ public class UserController {
     }
 
     /**
-     * 根据主键删除。
-     *
-     * @param id 主键
-     * @return {@code true} 删除成功，{@code false} 删除失败
+     * 管理员添加用户
+     * @param userAddRequest 用户添加请求
+     * @return 添加的用户ID
      */
-    @DeleteMapping("remove/{id}")
-    public boolean remove(@PathVariable Long id) {
-        return userService.removeById(id);
+    @PostMapping("/add")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Long> addUser(@RequestBody UserAddRequest userAddRequest) {
+        ThrowUtils.throwIf(userAddRequest == null, ErrorCode.PARAMS_ERROR);
+        User user = new User();
+        BeanUtils.copyProperties(userAddRequest, user);
+        return ResultUtils.success(userService.addUser(user));
     }
-
-    /**
-     * 根据主键更新。
-     *
-     * @param user
-     * @return {@code true} 更新成功，{@code false} 更新失败
-     */
-    @PutMapping("update")
-    public boolean update(@RequestBody User user) {
-        return userService.updateById(user);
-    }
-
-    /**
-     * 查询所有。
-     *
-     * @return 所有数据
-     */
-    @GetMapping("list")
-    public List<User> list() {
-        return userService.list();
-    }
-
-    /**
-     * 根据主键获取。
-     *
-     * @param id 主键
-     * @return 详情
-     */
-    @GetMapping("getInfo/{id}")
-    public User getInfo(@PathVariable Long id) {
-        return userService.getById(id);
-    }
-
-    /**
-     * 分页查询。
-     *
-     * @param page 分页对象
-     * @return 分页对象
-     */
-    @GetMapping("page")
-    public Page<User> page(Page<User> page) {
-        return userService.page(page);
-    }
-
 }

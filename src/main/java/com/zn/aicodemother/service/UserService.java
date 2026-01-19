@@ -18,7 +18,7 @@ public interface UserService extends IService<User> {
      * 用户注册方法
      *
      * @param userAccount   用户账户，用于注册系统的唯一标识
-     * @param userPassword      用户密码，需要加密存储
+     * @param userPassword  用户密码，需要加密存储
      * @param checkPassword 确认密码，用于验证两次输入的密码是否一致
      * @return 返回用户ID
      */
@@ -64,8 +64,15 @@ public interface UserService extends IService<User> {
      * 用户登出
      *
      * @param request 请求对象
-     *
      * @return 登出是否成功
      */
     Boolean userLogout(HttpServletRequest request);
+
+    /**
+     * 添加用户的方法
+     *
+     * @param user 用户对象，包含要添加的用户信息
+     * @return  返回添加的用户ID
+     */
+    Long addUser(User user);
 }

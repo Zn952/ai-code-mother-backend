@@ -34,7 +34,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 用户注册方法
      *
      * @param userAccount   用户账户，用于注册系统的唯一标识
-     * @param userPassword      用户密码，需要加密存储
+     * @param userPassword  用户密码，需要加密存储
      * @param checkPassword 确认密码，用于验证两次输入的密码是否一致
      * @return 返回用户ID
      */
@@ -132,7 +132,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public User getLoginUser(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
-        ThrowUtils.throwIf(user == null || user.getId()==null, ErrorCode.NOT_LOGIN_ERROR);
+        ThrowUtils.throwIf(user == null || user.getId() == null, ErrorCode.NOT_LOGIN_ERROR);
         return user;
     }
 
@@ -140,16 +140,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 退出登录
      *
      * @param request 请求对象
-     *
      * @return 退出登录结果
      */
     @Override
     public Boolean userLogout(HttpServletRequest request) {
         // 先判断用户是否登录
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        ThrowUtils.throwIf(userObj == null, ErrorCode.OPERATION_ERROR,"用户未登录");
+        ThrowUtils.throwIf(userObj == null, ErrorCode.OPERATION_ERROR, "用户未登录");
         // 移除登录态
         request.getSession().removeAttribute(USER_LOGIN_STATE);
         return true;
+    }
+
+    /**
+     * 添加用户方法
+     *
+     * @param user 用户对象，包含要添加的用户信息
+     * @return 添加的用户ID
+     */
+    @Override
+    public Long addUser(User user) {
+        ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR);
+        String encryptedPassword = getEncryptedPassword(user.getUserPassword());
+        user.setUserPassword(encryptedPassword);
+        boolean saved = this.save(user);
+        ThrowUtils.throwIf(!saved, ErrorCode.OPERATION_ERROR);
+        return user.getId();
     }
 }
