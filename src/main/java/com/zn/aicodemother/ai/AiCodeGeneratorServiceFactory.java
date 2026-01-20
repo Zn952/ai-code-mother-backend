@@ -1,6 +1,5 @@
 package com.zn.aicodemother.ai;
 
-import cn.hutool.ai.core.AIService;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
@@ -20,6 +19,6 @@ public class AiCodeGeneratorServiceFactory {
 
     @Bean
     public AiCodeGeneratorService aiCodeGeneratorService() {
-        return AiServices.create(AiCodeGeneratorService.class,chatModel);
+        return AiServices.create(AiCodeGeneratorService.class, chatModel);
     }
 }

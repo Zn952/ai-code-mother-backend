@@ -6,6 +6,7 @@ target/
 src/main/resources/application.yml
 src/main/resources/application-dev.yml
 src/main/resources/application-local-dev.yml
+tmp/
 
 ### STS ###
 .apt_generated

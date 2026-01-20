@@ -1,5 +1,7 @@
 package com.zn.aicodemother.ai;
 
+import com.zn.aicodemother.ai.model.HtmlCodeResult;
+import com.zn.aicodemother.ai.model.MultiFileCodeResult;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -15,13 +17,13 @@ class AiCodeGeneratorServiceTest {
 
     @Test
     void generateHtmlCode() {
-        String generatedHtmlCode = aiCodeGeneratorService.generateHtmlCode("做个记账统计的小工具,50行代码");
+        HtmlCodeResult generatedHtmlCode = aiCodeGeneratorService.generateHtmlCode("做个记账统计的小工具,50行代码");
         Assertions.assertNotNull(generatedHtmlCode);
     }
 
     @Test
     void generateMultiFileCode() {
-        String generateMultiFileCode = aiCodeGeneratorService.generateMultiFileCode("做个记账统计的小工具，50行代码");
+        MultiFileCodeResult generateMultiFileCode = aiCodeGeneratorService.generateMultiFileCode("做个记账统计的小工具，50行代码");
         Assertions.assertNotNull(generateMultiFileCode);
     }
 }
