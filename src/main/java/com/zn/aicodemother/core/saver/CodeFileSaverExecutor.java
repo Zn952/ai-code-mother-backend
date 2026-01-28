@@ -1,4 +1,4 @@
-package com.zn.aicodemother.saver;
+package com.zn.aicodemother.core.saver;
 
 import com.zn.aicodemother.ai.model.HtmlCodeResult;
 import com.zn.aicodemother.ai.model.MultiFileCodeResult;

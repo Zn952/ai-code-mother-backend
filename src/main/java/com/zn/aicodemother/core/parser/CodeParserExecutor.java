@@ -1,4 +1,4 @@
-package com.zn.aicodemother.parser;
+package com.zn.aicodemother.core.parser;
 
 import com.zn.aicodemother.exception.BusinessException;
 import com.zn.aicodemother.exception.ErrorCode;

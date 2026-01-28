@@ -1,4 +1,4 @@
-package com.zn.aicodemother.parser;
+package com.zn.aicodemother.core.parser;
 
 /**
  * @program: ai-code-mother-backend
