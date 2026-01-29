@@ -322,10 +322,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Override
     public String deployApp(Long appId, User loginUser) {
         //1、参数校验
-        ThrowUtils.throwIf(appId == null, ErrorCode.PARAMS_ERROR,"应用ID不能为空");
+        ThrowUtils.throwIf(appId == null, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
         //2、查询应用信息
         App app = this.getById(appId);
-        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR,"应用不存在");
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
         //3、校验权限
         if (!app.getUserId().equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
@@ -342,7 +342,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
         //6、检查源目录是否存在
         File sourceDir = new File(sourceDirPath);
-        ThrowUtils.throwIf(!sourceDir.exists()||!sourceDir.isDirectory(),
+        ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(),
                 ErrorCode.NOT_FOUND_ERROR, "源代码目录不存在");
         //7、复制文件到部署目录
         String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
@@ -350,13 +350,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         try {
             FileUtil.copyContent(sourceDir, deployDir, true);
         } catch (IORuntimeException e) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署失败"+e.getMessage());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署失败" + e.getMessage());
         }
         //8、更新应用的deploy和部署时间
         app.setDeployKey(deployKey);
         app.setDeployedTime(LocalDateTime.now());
         boolean result = this.updateById(app);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR,"更新应用部署信息失败");
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
         //9、返回部署URL
         return String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
     }
