@@ -1,7 +1,7 @@
 package com.zn.aicodemother.controller;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.zn.aicodemother.annotation.AuthCheck;
 import com.zn.aicodemother.common.BaseResponse;
@@ -10,7 +10,10 @@ import com.zn.aicodemother.common.ResultUtils;
 import com.zn.aicodemother.constant.UserConstant;
 import com.zn.aicodemother.exception.ErrorCode;
 import com.zn.aicodemother.exception.ThrowUtils;
-import com.zn.aicodemother.model.dto.app.*;
+import com.zn.aicodemother.model.dto.app.AppAddRequest;
+import com.zn.aicodemother.model.dto.app.AppAdminUpdateRequest;
+import com.zn.aicodemother.model.dto.app.AppQueryRequest;
+import com.zn.aicodemother.model.dto.app.AppUpdateRequest;
 import com.zn.aicodemother.model.entity.App;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.vo.AppVO;
@@ -20,10 +23,12 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * 应用 控制层。
@@ -200,7 +205,7 @@ public class AppController {
     public BaseResponse<AppVO> getAppVOByIdByAdmin(long id) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         AppVO appVO = appService.getAppVOById(id);
-        ThrowUtils.throwIf(appVO==null, ErrorCode.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(appVO == null, ErrorCode.NOT_FOUND_ERROR);
         return ResultUtils.success(appVO);
     }
 
@@ -213,16 +218,27 @@ public class AppController {
      * @return 生成结果流
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatToGenCode(@RequestParam Long appId,
-                                      @RequestParam String message,
-                                      HttpServletRequest request) {
+    public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
+                                                       @RequestParam String message,
+                                                       HttpServletRequest request) {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(CharSequenceUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
         // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
         // 调用服务生成代码（流式）
-        return appService.chatToGenCode(appId, message, loginUser);
+        Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
+        // 转换为 ServerSentEvent 格式
+        return contentFlux
+                .map(chunk -> {
+                    // 将内容包装成JSON对象
+                    Map<String, String> wrapper = Map.of("d", chunk);
+                    String jsonData = JSONUtil.toJsonStr(wrapper);
+                    return ServerSentEvent.<String>builder()
+                            .data(jsonData)
+                            .build();
+                });
     }
+
 
 }
