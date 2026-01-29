@@ -156,7 +156,7 @@ public class AppController {
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
         boolean result = appService.removeById(deleteRequest.getId());
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(result);
+        return ResultUtils.success(true);
     }
 
     /**
@@ -178,7 +178,7 @@ public class AppController {
         app.setEditTime(LocalDateTime.now());
         boolean result = appService.updateById(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(result);
+        return ResultUtils.success(true);
     }
 
     /**
