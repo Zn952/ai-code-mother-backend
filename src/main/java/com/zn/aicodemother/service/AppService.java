@@ -114,4 +114,13 @@ public interface AppService extends IService<App> {
      * @return 返回一个包含生成代码的字符串类型的Flux流，支持异步响应式处理
      */
     Flux<String> chatToGenCode(Long appId, String message, User loginUser);
+
+    /**
+     * 部署应用程序的方法
+     *
+     * @param appId     要部署的应用程序的ID
+     * @param loginUser 发起部署请求的用户信息
+     * @return 返回部署操作的结果，通常是一个表示成功或失败的字符串
+     */
+    String deployApp(Long appId, User loginUser);
 }

@@ -2,7 +2,10 @@ package com.zn.aicodemother.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -29,6 +32,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -146,7 +150,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
      * 分页查询用户自己的应用列表（支持根据名称查询，每页最多 20 个）
      *
      * @param appQueryRequest 查询请求
-     * @param loginUser        登录用户
+     * @param loginUser       登录用户
      * @return 分页结果
      */
     @Override
@@ -280,8 +284,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     /**
      * 应用聊天生成代码（流式SSE）
      *
-     * @param appId 应用ID
-     * @param message 用户消息
+     * @param appId     应用ID
+     * @param message   用户消息
      * @param loginUser 登录用户
      * @return 响应内容
      */
@@ -305,6 +309,56 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // 5. 调用 AI 生成代码
         return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+    }
+
+    /**
+     * 部署应用的方法实现
+     * 该方法是接口或父类中deployApp方法的具体实现
+     *
+     * @param appId     应用ID，用于标识要部署的应用
+     * @param loginUser 登录用户信息，包含当前操作的用户身份信息
+     * @return 返回一个空字符串，可能是预留的返回值或待完善的功能
+     */
+    @Override
+    public String deployApp(Long appId, User loginUser) {
+        //1、参数校验
+        ThrowUtils.throwIf(appId == null, ErrorCode.PARAMS_ERROR,"应用ID不能为空");
+        //2、查询应用信息
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR,"应用不存在");
+        //3、校验权限
+        if (!app.getUserId().equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
+        }
+        //4、检查是否已经有deployKey
+        String deployKey = app.getDeployKey();
+        //没有则生成6位deploy (大小写 + 数字)
+        if (CharSequenceUtil.isBlank(deployKey)) {
+            deployKey = RandomUtil.randomString(6);
+        }
+        //5、获取代码生成类型、构建源目录路径
+        String codeGenType = app.getCodeGenType();
+        String sourceDirName = codeGenType + "_" + appId;
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+        //6、检查源目录是否存在
+        File sourceDir = new File(sourceDirPath);
+        ThrowUtils.throwIf(!sourceDir.exists()||!sourceDir.isDirectory(),
+                ErrorCode.NOT_FOUND_ERROR, "源代码目录不存在");
+        //7、复制文件到部署目录
+        String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
+        File deployDir = new File(deployDirPath);
+        try {
+            FileUtil.copyContent(sourceDir, deployDir, true);
+        } catch (IORuntimeException e) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署失败"+e.getMessage());
+        }
+        //8、更新应用的deploy和部署时间
+        app.setDeployKey(deployKey);
+        app.setDeployedTime(LocalDateTime.now());
+        boolean result = this.updateById(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR,"更新应用部署信息失败");
+        //9、返回部署URL
+        return String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
     }
 
 }
