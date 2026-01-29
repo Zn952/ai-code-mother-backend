@@ -9,6 +9,7 @@ import com.zn.aicodemother.model.dto.app.AppUpdateRequest;
 import com.zn.aicodemother.model.entity.App;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.vo.AppVO;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -104,4 +105,13 @@ public interface AppService extends IService<App> {
      */
     QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest);
 
+    /**
+     * 根据应用ID和用户消息生成代码的响应式流方法
+     *
+     * @param appId     应用程序的唯一标识符
+     * @param message   用户输入的消息内容
+     * @param loginUser 当前登录用户信息
+     * @return 返回一个包含生成代码的字符串类型的Flux流，支持异步响应式处理
+     */
+    Flux<String> chatToGenCode(Long appId, String message, User loginUser);
 }
