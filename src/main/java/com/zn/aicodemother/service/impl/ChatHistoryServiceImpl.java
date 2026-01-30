@@ -1,5 +1,6 @@
 package com.zn.aicodemother.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -15,11 +16,16 @@ import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.zn.aicodemother.service.AppService;
 import com.zn.aicodemother.service.ChatHistoryService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 对话历史服务层实现。
@@ -27,6 +33,7 @@ import java.time.LocalDateTime;
  * @author Zn
  * @since 2026-01-17
  */
+@Slf4j
 @Service
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory> implements ChatHistoryService {
 
@@ -147,5 +154,46 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         return queryWrapper;
     }
 
-
+    /**
+     * 加载聊天记录到内存
+     *
+     * @param appId      应用ID
+     * @param chatMemory 聊天内存
+     * @param maxCount   最大记录数
+     * @return 加载的记录数
+     */
+    @Override
+    public int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount) {
+        try {
+            // 构造查询条件
+            QueryWrapper queryWrapper = QueryWrapper.create()
+                    .eq("appId", appId)
+                    .orderBy("createTime", false)
+                    .limit(1, maxCount);
+            List<ChatHistory> chatHistoryList = this.list(queryWrapper);
+            if (CollUtil.isEmpty(chatHistoryList)) {
+                return 0;
+            }
+            // 反转列表
+            chatHistoryList = chatHistoryList.reversed();
+            // 按照时间顺序加载至内存
+            int loadeCount = 0;
+            // 先清理历史缓存防止重复加载
+            chatMemory.clear();
+            for (ChatHistory chatHistory : chatHistoryList) {
+                if (ChatHistoryMessageTypeEnum.USER.getValue().equals(chatHistory.getMessageType())) {
+                    chatMemory.add(UserMessage.from(chatHistory.getMessage()));
+                    loadeCount++;
+                } else if (ChatHistoryMessageTypeEnum.AI.getValue().equals(chatHistory.getMessageType())) {
+                    chatMemory.add(AiMessage.from(chatHistory.getMessage()));
+                    loadeCount++;
+                }
+            }
+            log.info("加载聊天记录到内存，应用ID：{}，加载记录数：{}", appId, loadeCount);
+            return loadeCount;
+        } catch (Exception e) {
+            log.error("加载聊天记录到内存失败，应用ID：{}", appId, e);
+            return 0;
+        }
+    }
 }

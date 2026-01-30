@@ -6,6 +6,7 @@ import com.mybatisflex.core.service.IService;
 import com.zn.aicodemother.model.dto.chatHistory.ChatHistoryQueryRequest;
 import com.zn.aicodemother.model.entity.ChatHistory;
 import com.zn.aicodemother.model.entity.User;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.time.LocalDateTime;
 
@@ -55,4 +56,13 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @return QueryWrapper 返回一个包含查询条件的QueryWrapper对象，用于数据库查询操作
      */
     QueryWrapper getQueryWrapper(ChatHistoryQueryRequest chatHistoryQueryRequest);
+
+    /**
+     * 加载聊天记录到内存
+     * @param appId 应用ID
+     * @param chatMemory  聊天内存
+     * @param maxCount 最大记录数
+     * @return 加载的记录数
+     */
+    int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
 }
