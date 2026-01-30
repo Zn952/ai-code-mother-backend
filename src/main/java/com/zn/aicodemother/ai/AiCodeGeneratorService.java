@@ -2,7 +2,9 @@ package com.zn.aicodemother.ai;
 
 import com.zn.aicodemother.ai.model.HtmlCodeResult;
 import com.zn.aicodemother.ai.model.MultiFileCodeResult;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
 import reactor.core.publisher.Flux;
 
 /**
@@ -47,5 +49,5 @@ public interface AiCodeGeneratorService {
      * @return AI 的输出结果
      */
     @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
-    Flux<String> generateMultiFileCodeStream(String userMessage);
+    Flux<String> generateMultiFileCodeStream(@MemoryId long memoryId, @UserMessage  String userMessage);
 }

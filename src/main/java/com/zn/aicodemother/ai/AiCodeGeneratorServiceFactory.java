@@ -1,5 +1,8 @@
 package com.zn.aicodemother.ai;
 
+import com.zn.aicodemother.config.RedisChatMemoryStoreConfig;
+import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
@@ -21,6 +24,9 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private StreamingChatModel streamingChatModel;
 
+    @Resource
+    private RedisChatMemoryStore redisChatMemoryStore;
+
 //    @Bean
 //    public AiCodeGeneratorService aiCodeGeneratorService() {
 //        return AiServices.create(AiCodeGeneratorService.class, chatModel);
@@ -31,6 +37,12 @@ public class AiCodeGeneratorServiceFactory {
         return AiServices.builder(AiCodeGeneratorService.class)
                 .chatModel(chatModel)
                 .streamingChatModel(streamingChatModel)
+                .chatMemoryProvider(memorryId -> MessageWindowChatMemory.builder()
+                                .id(memorryId)
+                                .chatMemoryStore(redisChatMemoryStore)
+                                .maxMessages(20)
+                                .build()
+                        )
                 .build();
     }
 

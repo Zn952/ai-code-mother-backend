@@ -167,7 +167,7 @@ public class AppController {
      * @param appAdminUpdateRequest 应用更新请求
      * @return 更新结果
      */
-    @PostMapping("/update/admin")
+    @PostMapping("/admin/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> updateAppByAdmin(@RequestBody AppAdminUpdateRequest appAdminUpdateRequest) {
         ThrowUtils.throwIf(appAdminUpdateRequest == null, ErrorCode.PARAMS_ERROR);
