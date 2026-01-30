@@ -16,7 +16,7 @@ import java.util.Map;
  **/
 public class MyBatisCodeGenerator {
     //目标表的表名
-    public static final String[] TABLE_NAMES = {"app"};
+    public static final String[] TABLE_NAMES = {"chat_history"};
 
     public static void main(String[] args) {
 
