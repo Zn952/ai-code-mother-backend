@@ -21,10 +21,12 @@ import com.zn.aicodemother.model.dto.app.AppQueryRequest;
 import com.zn.aicodemother.model.dto.app.AppUpdateRequest;
 import com.zn.aicodemother.model.entity.App;
 import com.zn.aicodemother.model.entity.User;
+import com.zn.aicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.zn.aicodemother.model.enums.CodeGenTypeEnum;
 import com.zn.aicodemother.model.vo.AppVO;
 import com.zn.aicodemother.model.vo.UserVO;
 import com.zn.aicodemother.service.AppService;
+import com.zn.aicodemother.service.ChatHistoryService;
 import com.zn.aicodemother.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +53,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ChatHistoryService chatHistoryService;
 
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
@@ -129,6 +134,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 "只能删除自己的应用");
         boolean result = this.removeById(id);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        chatHistoryService.removeByAppId(id);
         return true;
     }
 
@@ -298,7 +304,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         App app = this.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
         // 3. 验证用户是否有权限访问该应用，仅本人可以生成代码
-        if (!app.getUserId().equals(loginUser.getId())) {
+        Long userId = loginUser.getId();
+        if (!app.getUserId().equals(userId)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
         }
         // 4. 获取应用的代码生成类型
@@ -307,8 +314,29 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
         }
-        // 5. 调用 AI 生成代码
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        // 5. 保存用户消息到对话历史
+        chatHistoryService.addChatMessage(appId, userId, ChatHistoryMessageTypeEnum.USER.getValue(), message);
+        // 6. 调用 AI 生成代码（流式），并在完成或失败时保存 AI消息
+        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        StringBuilder contentBuilder = new StringBuilder();
+        return contentFlux
+                .map(chunk -> {
+                    // 收集AI响应内容
+                    contentBuilder.append(chunk);
+                    return chunk;
+                })
+                .doOnComplete(() -> {
+                    // 流式响应完成后，添加AI消息到对话历史
+                    String aiResponse = contentBuilder.toString();
+                    if (CharSequenceUtil.isNotBlank(aiResponse)) {
+                        chatHistoryService.addChatMessage(appId, userId, ChatHistoryMessageTypeEnum.AI.getValue(), aiResponse);
+                    }
+                })
+                .doOnError(error -> {
+                    // 如果AI回复失败，也要记录错误消息
+                    String errorMessage = "AI回复失败: " + error.getMessage();
+                    chatHistoryService.addChatMessage(appId, userId, ChatHistoryMessageTypeEnum.AI.getValue(), errorMessage);
+                });
     }
 
     /**

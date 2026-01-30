@@ -15,6 +15,7 @@ import com.zn.aicodemother.model.entity.App;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.vo.AppVO;
 import com.zn.aicodemother.service.AppService;
+import com.zn.aicodemother.service.ChatHistoryService;
 import com.zn.aicodemother.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +44,9 @@ public class AppController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ChatHistoryService chatHistoryService;
 
     // ==================== 用户功能 ====================
 
@@ -153,6 +157,7 @@ public class AppController {
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
         boolean result = appService.removeById(deleteRequest.getId());
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        chatHistoryService.removeByAppId(deleteRequest.getId());
         return ResultUtils.success(true);
     }
 
