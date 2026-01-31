@@ -29,6 +29,7 @@ public class ReasoningStreamingChatModelConfig {
     public StreamingChatModel reasoningStreamingChatModel() {
         // 为了测试方便临时修改
         final String modelName = "qwen-plus-2025-12-01";
+//        final String modelName = "deepseek-chat";
         final int maxTokens = 8192;
         // 生产环境使用：
         // final String modelName = "deepseek-reasoner";

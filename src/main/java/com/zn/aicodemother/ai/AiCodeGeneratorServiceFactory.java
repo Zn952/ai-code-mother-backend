@@ -16,6 +16,7 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -35,9 +36,11 @@ public class AiCodeGeneratorServiceFactory {
     private ChatModel chatModel;
 
     @Resource
+    @Qualifier("openAiStreamingChatModel")
     private StreamingChatModel openAiStreamingChatModel;
 
     @Resource
+    @Qualifier("reasoningStreamingChatModel")
     private StreamingChatModel reasoningStreamingChatModel;
 
     @Resource

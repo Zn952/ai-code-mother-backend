@@ -12,6 +12,7 @@ import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.zn.aicodemother.constant.AppConstant;
 import com.zn.aicodemother.constant.UserConstant;
 import com.zn.aicodemother.core.AiCodeGeneratorFacade;
+import com.zn.aicodemother.core.handler.StreamHandlerExecutor;
 import com.zn.aicodemother.exception.BusinessException;
 import com.zn.aicodemother.exception.ErrorCode;
 import com.zn.aicodemother.exception.ThrowUtils;
@@ -60,6 +61,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
+    @Resource
+    private StreamHandlerExecutor streamHandlerExecutor;
+
     /**
      * 创建应用
      *
@@ -80,7 +84,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
         // 暂时设置为多文件生成
-        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
+//        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
+        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
         // 插入数据库
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -318,25 +323,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         chatHistoryService.addChatMessage(appId, userId, ChatHistoryMessageTypeEnum.USER.getValue(), message);
         // 6. 调用 AI 生成代码（流式），并在完成或失败时保存 AI消息
         Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-        StringBuilder contentBuilder = new StringBuilder();
-        return contentFlux
-                .map(chunk -> {
-                    // 收集AI响应内容
-                    contentBuilder.append(chunk);
-                    return chunk;
-                })
-                .doOnComplete(() -> {
-                    // 流式响应完成后，添加AI消息到对话历史
-                    String aiResponse = contentBuilder.toString();
-                    if (CharSequenceUtil.isNotBlank(aiResponse)) {
-                        chatHistoryService.addChatMessage(appId, userId, ChatHistoryMessageTypeEnum.AI.getValue(), aiResponse);
-                    }
-                })
-                .doOnError(error -> {
-                    // 如果AI回复失败，也要记录错误消息
-                    String errorMessage = "AI回复失败: " + error.getMessage();
-                    chatHistoryService.addChatMessage(appId, userId, ChatHistoryMessageTypeEnum.AI.getValue(), errorMessage);
-                });
+        // 7. 返回响应内容
+        return  streamHandlerExecutor.doExecute(contentFlux, chatHistoryService,appId,loginUser,codeGenTypeEnum);
     }
 
     /**
