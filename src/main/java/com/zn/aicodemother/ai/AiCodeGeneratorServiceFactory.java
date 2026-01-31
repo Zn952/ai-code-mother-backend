@@ -2,8 +2,13 @@ package com.zn.aicodemother.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.zn.aicodemother.ai.tools.FileWriteTool;
+import com.zn.aicodemother.exception.BusinessException;
+import com.zn.aicodemother.exception.ErrorCode;
+import com.zn.aicodemother.model.enums.CodeGenTypeEnum;
 import com.zn.aicodemother.service.ChatHistoryService;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
@@ -25,11 +30,15 @@ import java.time.Duration;
 @Slf4j
 @Configuration
 public class AiCodeGeneratorServiceFactory {
+
     @Resource
     private ChatModel chatModel;
 
     @Resource
-    private StreamingChatModel streamingChatModel;
+    private StreamingChatModel openAiStreamingChatModel;
+
+    @Resource
+    private StreamingChatModel reasoningStreamingChatModel;
 
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
@@ -37,10 +46,6 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private ChatHistoryService chatHistoryService;
 
-//    @Bean
-//    public AiCodeGeneratorService aiCodeGeneratorService() {
-//        return AiServices.create(AiCodeGeneratorService.class, chatModel);
-//    }
 
     /**
      * 缓存AI代码生成器服务实例
@@ -50,7 +55,7 @@ public class AiCodeGeneratorServiceFactory {
      * - 缓存访问过期时间：10分钟
      * - 缓存移除监听器：记录日志
      */
-    private final Cache<Long, AiCodeGeneratorService> serviceCache = Caffeine.newBuilder()
+    private final Cache<String, AiCodeGeneratorService> serviceCache = Caffeine.newBuilder()
             .maximumSize(1000)
             .expireAfterWrite(Duration.ofMinutes(30))
             .expireAfterAccess(Duration.ofMinutes(10))
@@ -63,39 +68,79 @@ public class AiCodeGeneratorServiceFactory {
     /**
      * 根据应用ID获取AI代码生成器服务
      * 如果缓存中不存在，则通过创建函数创建新的服务实例
+     * 兼容历史版本
      *
      * @param appId 应用的唯一标识符
      * @return 返回对应appId的AiCodeGeneratorService实例
      */
     public AiCodeGeneratorService getAiCodeGeneratorService(long appId) {
-        // 使用serviceCache的get方法，如果缓存中不存在appId对应的service，则调用createAiCodeGeneratorService方法创建
-        return serviceCache.get(appId, this::createAiCodeGeneratorService);
+        return getAiCodeGeneratorService(appId, CodeGenTypeEnum.HTML);
     }
 
+    /**
+     * 根据应用ID获取AI代码生成器服务
+     * 如果缓存中不存在，则通过创建函数创建新的服务实例
+     *
+     * @param appId           应用的唯一标识符
+     * @param codeGenTypeEnum 代码生成类型
+     * @return 返回对应appId的AiCodeGeneratorService实例
+     */
+    public AiCodeGeneratorService getAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenTypeEnum) {
+        String cacheKey = bulidCacheKey(appId, codeGenTypeEnum);
+        return serviceCache.get(cacheKey, key -> createAiCodeGeneratorService(appId, codeGenTypeEnum));
+    }
 
     /**
      * 根据应用ID获取AI代码生成器服务
      * 该方法用于返回指定应用ID对应的AI代码生成器服务实例
      *
-     * @param appId 应用ID，用于标识特定的应用
+     * @param appId           应用ID，用于标识特定的应用
+     * @param codeGenTypeEnum 代码生成类型，用于指定生成代码的类型
      * @return AiCodeGeneratorService 返回AI代码生成器服务实例
      */
-    private AiCodeGeneratorService createAiCodeGeneratorService(long appId) {
-        log.info("为appId: {} 创建 AI服务实例", appId);
+    private AiCodeGeneratorService createAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenTypeEnum) {
+        log.info("为生成类型 {} 的appId: {} 创建 AI服务实例", codeGenTypeEnum.getValue(), appId);
         // 根据应用ID构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
                 .id(appId)
                 .chatMemoryStore(redisChatMemoryStore)
                 .maxMessages(20)
                 .build();
-        chatHistoryService.loadChatHistoryToMemory(appId,chatMemory,20);
+        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
         // 创建一个ChatMemoryProvider，总是返回这个chatMemory
         ChatMemoryProvider chatMemoryProvider = memoryId -> chatMemory;
-        return AiServices.builder(AiCodeGeneratorService.class)
-                .chatModel(chatModel)
-                .streamingChatModel(streamingChatModel)
-                .chatMemoryProvider(chatMemoryProvider)
-                .build();
+        switch (codeGenTypeEnum) {
+            case VUE_PROJECT -> {
+                return AiServices.builder(AiCodeGeneratorService.class)
+                        .streamingChatModel(reasoningStreamingChatModel)
+                        .tools(new FileWriteTool())
+                        .chatMemoryProvider(chatMemoryProvider)
+                        .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(toolExecutionRequest, "Error: there is no tool called" + toolExecutionRequest))
+                        .build();
+            }
+            case HTML, MULTI_FILE -> {
+                return AiServices.builder(AiCodeGeneratorService.class)
+                        .chatModel(chatModel)
+                        .streamingChatModel(openAiStreamingChatModel)
+                        .chatMemoryProvider(chatMemoryProvider)
+                        .build();
+            }
+            default -> {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型" + codeGenTypeEnum.getValue());
+            }
+        }
+    }
+
+    /**
+     * 根据应用ID和代码生成类型枚举生成缓存键
+     *
+     * @param appId           应用ID，用于唯一标识一个应用
+     * @param codeGenTypeEnum 代码生成类型枚举，表示不同的代码生成类型
+     * @return 返回拼接后的字符串作为缓存键，格式为"appId_codeGenTypeEnumValue"
+     */
+    private String bulidCacheKey(long appId, CodeGenTypeEnum codeGenTypeEnum) {
+        // 将应用ID和代码生成类型的值通过下划线连接，形成唯一的缓存键
+        return appId + "_" + codeGenTypeEnum.getValue();
     }
 
     @Bean
@@ -104,3 +149,4 @@ public class AiCodeGeneratorServiceFactory {
     }
 
 }
+
