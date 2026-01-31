@@ -12,6 +12,7 @@ import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.zn.aicodemother.constant.AppConstant;
 import com.zn.aicodemother.constant.UserConstant;
 import com.zn.aicodemother.core.AiCodeGeneratorFacade;
+import com.zn.aicodemother.core.builder.VueProjectBuilder;
 import com.zn.aicodemother.core.handler.StreamHandlerExecutor;
 import com.zn.aicodemother.exception.BusinessException;
 import com.zn.aicodemother.exception.ErrorCode;
@@ -63,6 +64,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private StreamHandlerExecutor streamHandlerExecutor;
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 创建应用
@@ -360,7 +364,19 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         File sourceDir = new File(sourceDirPath);
         ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(),
                 ErrorCode.NOT_FOUND_ERROR, "源代码目录不存在");
-        //7、复制文件到部署目录
+        //7、vue项目构建与部署
+        if (CodeGenTypeEnum.VUE_PROJECT.getValue().equals(codeGenType)) {
+            //7.1、构建项目
+            boolean buildProject = vueProjectBuilder.buildProject(sourceDirPath);
+            ThrowUtils.throwIf(!buildProject, ErrorCode.SYSTEM_ERROR,"Vue项目构建失败");
+            //7.2、检查dist目录是否存在
+            File distDir = new File(sourceDirPath  + "dist");
+            ThrowUtils.throwIf(!distDir.exists(), ErrorCode.SYSTEM_ERROR,"Vue项目构建失败，未生成dist目录");
+            //7.3、构建成功，将dist目录复制到部署目录
+            sourceDir = distDir;
+            log.info("Vue项目构建成功，将dist目录复制到部署目录:{}",distDir.getAbsolutePath());
+        }
+        //8、复制文件到部署目录
         String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
         File deployDir = new File(deployDirPath);
         try {
@@ -368,12 +384,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         } catch (IORuntimeException e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署失败" + e.getMessage());
         }
-        //8、更新应用的deploy和部署时间
+        //9、更新应用的deploy和部署时间
         app.setDeployKey(deployKey);
         app.setDeployedTime(LocalDateTime.now());
         boolean result = this.updateById(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        //9、返回部署URL
+        //10、返回部署URL
         return String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
     }
 
