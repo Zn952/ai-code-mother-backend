@@ -9,6 +9,7 @@ import cn.hutool.core.util.RandomUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.zn.aicodemother.ai.AiCodeGenTypeRoutingService;
 import com.zn.aicodemother.constant.AppConstant;
 import com.zn.aicodemother.constant.UserConstant;
 import com.zn.aicodemother.core.AiCodeGeneratorFacade;
@@ -27,10 +28,9 @@ import com.zn.aicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.zn.aicodemother.model.enums.CodeGenTypeEnum;
 import com.zn.aicodemother.model.vo.AppVO;
 import com.zn.aicodemother.model.vo.UserVO;
-import com.zn.aicodemother.service.AppService;
-import com.zn.aicodemother.service.ChatHistoryService;
-import com.zn.aicodemother.service.UserService;
+import com.zn.aicodemother.service.*;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -63,10 +63,19 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
     @Resource
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+
+    @Resource
     private StreamHandlerExecutor streamHandlerExecutor;
 
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+
+    @Resource
+    private ScreenshotService screenshotService;
+
+    @Resource
+    private ProjectDownloadService projectDownloadService;
 
     /**
      * 创建应用
@@ -88,8 +97,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
         // 暂时设置为多文件生成
-//        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
-        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
+        CodeGenTypeEnum codeGenTypeEnum = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        app.setCodeGenType(codeGenTypeEnum.getValue());
         // 插入数据库
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -328,7 +337,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 6. 调用 AI 生成代码（流式），并在完成或失败时保存 AI消息
         Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
         // 7. 返回响应内容
-        return  streamHandlerExecutor.doExecute(contentFlux, chatHistoryService,appId,loginUser,codeGenTypeEnum);
+        return streamHandlerExecutor.doExecute(contentFlux, chatHistoryService, appId, loginUser, codeGenTypeEnum);
     }
 
     /**
@@ -368,15 +377,15 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (CodeGenTypeEnum.VUE_PROJECT.getValue().equals(codeGenType)) {
             //7.1、构建项目
             boolean buildProject = vueProjectBuilder.buildProject(sourceDirPath);
-            ThrowUtils.throwIf(!buildProject, ErrorCode.SYSTEM_ERROR,"Vue项目构建失败");
+            ThrowUtils.throwIf(!buildProject, ErrorCode.SYSTEM_ERROR, "Vue项目构建失败");
             //7.2、检查dist目录是否存在
-            File distDir = new File(sourceDirPath  , "dist");
-            ThrowUtils.throwIf(!distDir.exists(), ErrorCode.SYSTEM_ERROR,"Vue项目构建失败，未生成dist目录");
+            File distDir = new File(sourceDirPath, "dist");
+            ThrowUtils.throwIf(!distDir.exists(), ErrorCode.SYSTEM_ERROR, "Vue项目构建失败，未生成dist目录");
             //7.3、修改index.html
 
             //7.4、构建成功，将dist目录复制到部署目录
             sourceDir = distDir;
-            log.info("Vue项目构建成功，将dist目录复制到部署目录:{}",distDir.getAbsolutePath());
+            log.info("Vue项目构建成功，将dist目录复制到部署目录:{}", distDir.getAbsolutePath());
         }
         //8、复制文件到部署目录
         String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
@@ -392,7 +401,62 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         boolean result = this.updateById(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
         //10、返回部署URL
-        return String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        generateAppScreenshotAsync(appId, appDeployUrl);
+        return appDeployUrl;
     }
 
+    /**
+     * 异步生成应用截图并更新封面
+     *
+     * @param appId  应用ID
+     * @param appUrl 应用访问URL
+     */
+    @Override
+    public void generateAppScreenshotAsync(Long appId, String appUrl) {
+        // 使用虚拟线程异步执行
+        Thread.startVirtualThread(() -> {
+            // 调用截图服务生成截图并上传
+            String screenshotUrl = screenshotService.generateAndUploadScreenshot(appUrl);
+            // 更新应用封面字段
+            App updateApp = new App();
+            updateApp.setId(appId);
+            updateApp.setCover(screenshotUrl);
+            boolean updated = this.updateById(updateApp);
+            ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
+        });
+    }
+
+    /**
+     * 下载项目为ZIP格式文件的方法
+     *
+     * @param appId     应用程序的ID，用于标识需要下载的项目
+     * @param loginUser 执行下载操作的用户对象，用于权限验证
+     * @param response  HTTP响应对象，用于将ZIP文件流返回给客户端
+     */
+    @Override
+    public void downloadProjectAsZip(Long appId, User loginUser, HttpServletResponse response) {
+        // 1. 基础校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
+        // 2. 查询应用信息
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        // 3. 权限校验：只有应用创建者可以下载代码
+        if (!app.getUserId().equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限下载该应用代码");
+        }
+        // 4. 构建应用代码目录路径（生成目录，非部署目录）
+        String codeGenType = app.getCodeGenType();
+        String sourceDirName = codeGenType + "_" + appId;
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+        // 5. 检查代码目录是否存在
+        File sourceDir = new File(sourceDirPath);
+        ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(),
+                ErrorCode.NOT_FOUND_ERROR, "应用代码不存在，请先生成代码");
+        // 6. 生成下载文件名（不建议添加中文内容）
+        String downloadFileName = String.valueOf(appId);
+        // 7. 调用通用下载服务
+        projectDownloadService.downloadProjectAsZip(sourceDirPath, downloadFileName, response);
+
+    }
 }

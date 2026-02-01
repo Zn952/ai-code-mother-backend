@@ -9,6 +9,7 @@ import com.zn.aicodemother.model.dto.app.AppUpdateRequest;
 import com.zn.aicodemother.model.entity.App;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.vo.AppVO;
+import jakarta.servlet.http.HttpServletResponse;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -123,4 +124,21 @@ public interface AppService extends IService<App> {
      * @return 返回部署操作的结果，通常是一个表示成功或失败的字符串
      */
     String deployApp(Long appId, User loginUser);
+
+    /**
+     * 异步生成应用截图并更新封面
+     *
+     * @param appId  应用ID
+     * @param appUrl 应用访问URL
+     */
+    void generateAppScreenshotAsync(Long appId, String appUrl);
+
+    /**
+     * 下载指定项目路径下的内容打包成ZIP文件并下载
+     *
+     * @param appId     应用ID
+     * @param loginUser 登录用户
+     * @param response  HTTP响应对象，用于输出下载文件流
+     */
+    void downloadProjectAsZip(Long appId, User loginUser, HttpServletResponse response);
 }
