@@ -2,7 +2,7 @@ package com.zn.aicodemother.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.zn.aicodemother.ai.tools.*;
+import com.zn.aicodemother.ai.tools.ToolManager;
 import com.zn.aicodemother.exception.BusinessException;
 import com.zn.aicodemother.exception.ErrorCode;
 import com.zn.aicodemother.model.enums.CodeGenTypeEnum;
@@ -48,6 +48,9 @@ public class AiCodeGeneratorServiceFactory {
 
     @Resource
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private ToolManager toolManager;
 
 
     /**
@@ -117,13 +120,7 @@ public class AiCodeGeneratorServiceFactory {
                 return AiServices.builder(AiCodeGeneratorService.class)
                         .streamingChatModel(reasoningStreamingChatModel)
                         .chatMemoryProvider(memoryId -> chatMemory)
-                        .tools(
-                                new FileWriteTool(),
-                                new FileReadTool(),
-                                new FileModifyTool(),
-                                new FileDirReadTool(),
-                                new FileDeleteTool()
-                        )
+                        .tools(toolManager.getAllTools())
                         .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                                 toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                         ))

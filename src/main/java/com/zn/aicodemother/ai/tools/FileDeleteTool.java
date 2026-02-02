@@ -1,10 +1,12 @@
 package com.zn.aicodemother.ai.tools;
 
+import cn.hutool.json.JSONObject;
 import com.zn.aicodemother.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolMemoryId;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,9 +19,9 @@ import java.nio.file.Paths;
  * @author: Zn
  * @create: 2026-02-02 19:36
  **/
-
+@Component
 @Slf4j
-public class FileDeleteTool {
+public class FileDeleteTool extends BaseTool {
 
     @Tool("删除指定路径的文件")
     public String deleteFile(@P("文件的相对路径") String relativeFilePath, @ToolMemoryId Long appId) {
@@ -67,5 +69,21 @@ public class FileDeleteTool {
             }
         }
         return false;
+    }
+
+    @Override
+    public String getToolName() {
+        return "deleteFile";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "删除文件";
+    }
+
+    @Override
+    public String generateToolExecutedResult(JSONObject arguments) {
+        String relativeFilePath = arguments.getStr("relativeFilePath");
+        return String.format("[工具调用] %s %s", getDisplayName(), relativeFilePath);
     }
 }

@@ -1,10 +1,12 @@
 package com.zn.aicodemother.ai.tools;
 
+import cn.hutool.json.JSONObject;
 import com.zn.aicodemother.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolMemoryId;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,8 +20,9 @@ import java.nio.file.StandardOpenOption;
  * @author: Zn
  * @create: 2026-02-02 20:07
  **/
+@Component
 @Slf4j
-public class FileModifyTool {
+public class FileModifyTool extends BaseTool {
 
     @Tool("修改文件内容，用新内容替换指定的旧内容")
     public String modifyFile(
@@ -57,5 +60,35 @@ public class FileModifyTool {
             log.error(errorMessage, e);
             return errorMessage;
         }
+    }
+
+    @Override
+    public String getToolName() {
+        return "modifyFile";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "修改文件内容";
+    }
+
+    public String generateToolExecutedResult(JSONObject arguments) {
+        String relativeFilePath = arguments.getStr("relativeFilePath");
+        String oldContent = arguments.getStr("oldContent");
+        String newContent = arguments.getStr("newContent");
+        // 显示对比内容
+        return String.format("""
+                [工具调用] %s %s
+                
+                替换前：
+                ```
+                %s
+                ```
+                
+                替换后：
+                ```
+                %s
+                ```
+                """, getDisplayName(), relativeFilePath, oldContent, newContent);
     }
 }
