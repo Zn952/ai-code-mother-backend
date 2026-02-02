@@ -2,7 +2,7 @@ package com.zn.aicodemother.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.zn.aicodemother.ai.tools.FileWriteTool;
+import com.zn.aicodemother.ai.tools.*;
 import com.zn.aicodemother.exception.BusinessException;
 import com.zn.aicodemother.exception.ErrorCode;
 import com.zn.aicodemother.model.enums.CodeGenTypeEnum;
@@ -116,9 +116,17 @@ public class AiCodeGeneratorServiceFactory {
             case VUE_PROJECT -> {
                 return AiServices.builder(AiCodeGeneratorService.class)
                         .streamingChatModel(reasoningStreamingChatModel)
-                        .tools(new FileWriteTool())
-                        .chatMemoryProvider(chatMemoryProvider)
-                        .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(toolExecutionRequest, "Error: there is no tool called" + toolExecutionRequest))
+                        .chatMemoryProvider(memoryId -> chatMemory)
+                        .tools(
+                                new FileWriteTool(),
+                                new FileReadTool(),
+                                new FileModifyTool(),
+                                new FileDirReadTool(),
+                                new FileDeleteTool()
+                        )
+                        .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
+                                toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
+                        ))
                         .build();
             }
             case HTML, MULTI_FILE -> {
