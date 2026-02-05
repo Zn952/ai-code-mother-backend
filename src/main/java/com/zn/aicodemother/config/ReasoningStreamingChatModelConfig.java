@@ -28,7 +28,7 @@ public class ReasoningStreamingChatModelConfig {
     @Bean
     public StreamingChatModel reasoningStreamingChatModel() {
         // 为了测试方便临时修改
-        final String modelName = "qwen-plus-2025-12-01";
+        final String modelName = "kimi-k2-thinking";
 //        final String modelName = "deepseek-chat";
         final int maxTokens = 8192;
         // 生产环境使用：
