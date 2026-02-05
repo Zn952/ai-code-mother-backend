@@ -29,4 +29,10 @@ class LogoGeneratorToolTest {
                 System.out.println("Logo: " + logo.getDescription() + " - " + logo.getUrl())
         );
     }
+
+    @Test
+    void generateLogos() {
+        List<ImageResource> logos = logoGeneratorTool.generateLogos("技术公司现代简约风格Logo");
+        assertNotNull(logos);
+    }
 }
