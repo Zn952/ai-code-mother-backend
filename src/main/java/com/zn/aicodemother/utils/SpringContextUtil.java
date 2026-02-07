@@ -39,6 +39,11 @@ public class SpringContextUtil implements ApplicationContextAware {
      * 根据名称和类型获取Spring Bean
      */
     public static <T> T getBean(String name, Class<T> clazz) {
+        if (applicationContext == null) {
+            System.err.println("ApplicationContext 为 null，调用堆栈：");
+            Thread.dumpStack();
+            throw new IllegalStateException("ApplicationContext 未初始化");
+        }
         return applicationContext.getBean(name, clazz);
     }
 }

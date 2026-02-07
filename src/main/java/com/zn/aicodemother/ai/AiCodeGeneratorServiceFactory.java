@@ -7,6 +7,7 @@ import com.zn.aicodemother.exception.BusinessException;
 import com.zn.aicodemother.exception.ErrorCode;
 import com.zn.aicodemother.model.enums.CodeGenTypeEnum;
 import com.zn.aicodemother.service.ChatHistoryService;
+import com.zn.aicodemother.utils.SpringContextUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 import java.time.Duration;
 
@@ -30,18 +32,12 @@ import java.time.Duration;
  **/
 @Slf4j
 @Configuration
+@DependsOn("springContextUtil")
 public class AiCodeGeneratorServiceFactory {
 
-    @Resource
+    @Resource(name = "openAiChatModel")
     private ChatModel chatModel;
 
-    @Resource
-    @Qualifier("openAiStreamingChatModel")
-    private StreamingChatModel openAiStreamingChatModel;
-
-    @Resource
-    @Qualifier("reasoningStreamingChatModel")
-    private StreamingChatModel reasoningStreamingChatModel;
 
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
@@ -115,9 +111,12 @@ public class AiCodeGeneratorServiceFactory {
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
         // 创建一个ChatMemoryProvider，总是返回这个chatMemory
         ChatMemoryProvider chatMemoryProvider = memoryId -> chatMemory;
-        switch (codeGenTypeEnum) {
+        // 根据代码生成类型选择不同的模型配置
+        return switch (codeGenTypeEnum) {
             case VUE_PROJECT -> {
-                return AiServices.builder(AiCodeGeneratorService.class)
+                // 使用多例模式的 StreamingChatModel 解决并发问题
+                StreamingChatModel reasoningStreamingChatModel = SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", StreamingChatModel.class);
+                yield AiServices.builder(AiCodeGeneratorService.class)
                         .streamingChatModel(reasoningStreamingChatModel)
                         .chatMemoryProvider(memoryId -> chatMemory)
                         .tools(toolManager.getAllTools())
@@ -127,16 +126,18 @@ public class AiCodeGeneratorServiceFactory {
                         .build();
             }
             case HTML, MULTI_FILE -> {
-                return AiServices.builder(AiCodeGeneratorService.class)
+                // 使用多例模式的 StreamingChatModel 解决并发问题
+                StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
+                yield AiServices.builder(AiCodeGeneratorService.class)
                         .chatModel(chatModel)
                         .streamingChatModel(openAiStreamingChatModel)
-                        .chatMemoryProvider(chatMemoryProvider)
+                        .chatMemory(chatMemory)
                         .build();
             }
-            default -> {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型" + codeGenTypeEnum.getValue());
-            }
-        }
+            default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
+                    "不支持的代码生成类型: " + codeGenTypeEnum.getValue());
+        };
+
     }
 
     /**

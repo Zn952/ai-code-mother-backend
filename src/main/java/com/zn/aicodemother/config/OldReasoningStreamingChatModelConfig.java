@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "langchain4j.open-ai.chat-model")
 @Data
-public class ReasoningStreamingChatModelConfig {
+public class OldReasoningStreamingChatModelConfig {
 
     private String baseUrl;
 
