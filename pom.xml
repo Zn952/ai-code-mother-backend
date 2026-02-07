@@ -129,6 +129,13 @@
             <version>2.0.42</version>
             <scope>compile</scope>
         </dependency>
+        <!-- Redisson -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.50.0</version>
+        </dependency>
+
         <!--caffeine本地缓存避免重复构造相同appId的AI服务-->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>

@@ -14,6 +14,8 @@ import com.zn.aicodemother.model.dto.app.*;
 import com.zn.aicodemother.model.entity.App;
 import com.zn.aicodemother.model.entity.User;
 import com.zn.aicodemother.model.vo.AppVO;
+import com.zn.aicodemother.ratelimit.annotation.RateLimit;
+import com.zn.aicodemother.ratelimit.enums.RateLimitType;
 import com.zn.aicodemother.service.AppService;
 import com.zn.aicodemother.service.ChatHistoryService;
 import com.zn.aicodemother.service.UserService;
@@ -227,6 +229,7 @@ public class AppController {
      * @param request 请求对象
      * @return 生成结果流
      */
+    @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
