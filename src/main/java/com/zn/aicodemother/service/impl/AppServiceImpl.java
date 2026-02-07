@@ -19,6 +19,7 @@ import com.zn.aicodemother.core.handler.StreamHandlerExecutor;
 import com.zn.aicodemother.exception.BusinessException;
 import com.zn.aicodemother.exception.ErrorCode;
 import com.zn.aicodemother.exception.ThrowUtils;
+import com.zn.aicodemother.langgraph4j.ai.CodeQualityCheckServiceFactory;
 import com.zn.aicodemother.mapper.AppMapper;
 import com.zn.aicodemother.model.dto.app.AppAddRequest;
 import com.zn.aicodemother.model.dto.app.AppQueryRequest;
@@ -63,6 +64,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+
+    @Resource
+    private CodeQualityCheckServiceFactory codeQualityCheckServiceFactory;
 
     @Resource
     private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
