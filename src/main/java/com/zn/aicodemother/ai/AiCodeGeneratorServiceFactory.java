@@ -3,6 +3,7 @@ package com.zn.aicodemother.ai;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.zn.aicodemother.ai.guardrail.PromptSafetyInputGuardrail;
+import com.zn.aicodemother.ai.guardrail.RetryOutputGuardrail;
 import com.zn.aicodemother.ai.tools.ToolManager;
 import com.zn.aicodemother.exception.BusinessException;
 import com.zn.aicodemother.exception.ErrorCode;
@@ -125,6 +126,7 @@ public class AiCodeGeneratorServiceFactory {
                                 toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                         ))
                         .inputGuardrails(new PromptSafetyInputGuardrail())
+                        .outputGuardrails(new RetryOutputGuardrail())
                         .build();
             }
             case HTML, MULTI_FILE -> {
@@ -135,6 +137,7 @@ public class AiCodeGeneratorServiceFactory {
                         .streamingChatModel(openAiStreamingChatModel)
                         .chatMemory(chatMemory)
                         .inputGuardrails(new PromptSafetyInputGuardrail())
+                        .outputGuardrails(new RetryOutputGuardrail())
                         .build();
             }
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
