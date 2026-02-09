@@ -2,9 +2,7 @@ package com.zn.aicodemother.langgraph4j.node;
 
 import com.zn.aicodemother.constant.AppConstant;
 import com.zn.aicodemother.core.AiCodeGeneratorFacade;
-import com.zn.aicodemother.langgraph4j.model.ImageResource;
 import com.zn.aicodemother.langgraph4j.model.QualityResult;
-import com.zn.aicodemother.langgraph4j.model.enums.ImageCategoryEnum;
 import com.zn.aicodemother.langgraph4j.state.WorkflowContext;
 import com.zn.aicodemother.model.enums.CodeGenTypeEnum;
 import com.zn.aicodemother.utils.SpringContextUtil;
@@ -14,8 +12,6 @@ import org.bsc.langgraph4j.prebuilt.MessagesState;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
