@@ -8,6 +8,7 @@ package com.zn.aicodemother.innerservice;
  **/
 public interface InnerScreenshotService {
 
+    // TODO 待实现
     String generateAndUploadScreenshot(String webUrl);
 
 }
