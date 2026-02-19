@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
+import java.time.Duration;
+
 /**
  * @program: ai-code-mother-backend
  * @description: 推理专用流式模型配置
@@ -29,6 +31,8 @@ public class ReasoningStreamingChatModelConfig {
 
     private Double temperature;
 
+    private Duration timeout;
+
     private Boolean logRequests = false;
 
     private Boolean logResponses = false;
@@ -42,6 +46,7 @@ public class ReasoningStreamingChatModelConfig {
                 .modelName(modelName)
                 .maxTokens(maxTokens)
                 .temperature(temperature)
+                .timeout(timeout)
                 .logRequests(logRequests)
                 .logResponses(logResponses)
                 .build();
